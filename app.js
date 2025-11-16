@@ -56,8 +56,14 @@ function handleFormSubmit(e) {
 // Load and display paintings from JSON file
 function loadPaintings() {
     fetch('paintings.json')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to load paintings.json');
+            }
+            return response.json();
+        })
         .then(paintings => {
+            console.log('Loaded paintings:', paintings);
             const gallery = document.getElementById('gallery');
             const emptyMessage = document.getElementById('emptyMessage');
             
@@ -71,6 +77,9 @@ function loadPaintings() {
             emptyMessage.style.display = 'none';
             currentPaintingIndex = 0;
             
+            // Store paintings globally for navigation
+            window.allPaintings = paintings;
+            
             // Display only the current painting
             displayCurrentPainting(paintings);
             
@@ -79,6 +88,7 @@ function loadPaintings() {
         })
         .catch(error => {
             console.error('Error loading paintings:', error);
+            document.getElementById('emptyMessage').textContent = 'Error loading paintings. Please refresh the page.';
             document.getElementById('emptyMessage').style.display = 'block';
         });
 }
@@ -190,7 +200,7 @@ function escapeHtml(text) {
 
 // Scroll gallery
 function scrollGallery(direction) {
-    const paintings = JSON.parse(localStorage.getItem('paintings')) || [];
+    const paintings = window.allPaintings || [];
     
     if (paintings.length === 0) return;
     
