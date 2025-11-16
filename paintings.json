@@ -1,16 +1,59 @@
 [
   {
     "id": 1,
-    "title": "Sunset Beach",
-    "description": "Beautiful sunset over the ocean with warm colors",
+    "title": "Beach",
+    "description": "A beautiful beach painting with serene ocean waves",
     "year": "2025",
-    "image": "images/sunset-beach.jpg"
+    "image": "Beach.jpg"
   },
   {
     "id": 2,
-    "title": "Mountain Peak",
-    "description": "Snow-covered mountain with clear blue sky",
-    "year": "2024",
-    "image": "images/mountain-peak.jpg"
+    "title": "Beach and Boat",
+    "description": "Scenic beach view with a sailboat on the horizon",
+    "year": "2025",
+    "image": "beach and boat.jpg"
+  },
+  {
+    "id": 3,
+    "title": "Beautiful Day",
+    "description": "A stunning painting capturing a beautiful sunny day",
+    "year": "2025",
+    "image": "beautiful day.jpg"
+  },
+  {
+    "id": 4,
+    "title": "Beauty Birds",
+    "description": "Vibrant birds in their natural habitat",
+    "year": "2025",
+    "image": "beauty birds.jpg"
+  },
+  {
+    "id": 5,
+    "title": "Juicy Orange",
+    "description": "Close-up painting of fresh juicy oranges",
+    "year": "2025",
+    "image": "juicy orange.jpg"
+  },
+  {
+    "id": 6,
+    "title": "Lotus Women",
+    "description": "Ethereal painting of women among lotus flowers",
+    "year": "2025",
+    "image": "lotus women.jpg"
+  },
+  {
+    "id": 7,
+    "title": "Rainbow Hair",
+    "description": "Artistic portrait with vibrant rainbow colored hair",
+    "year": "2025",
+    "image": "rainbow hair.jpg"
+  },
+  {
+    "id": 8,
+    "title": "Sunflower Time",
+    "description": "Beautiful sunflowers in full bloom",
+    "year": "2025",
+    "image": "sunflower time.jpg"
   }
 ]
+
