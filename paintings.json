@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "title": "Sunset Beach",
+    "description": "Beautiful sunset over the ocean with warm colors",
+    "year": "2025",
+    "image": "images/sunset-beach.jpg"
+  },
+  {
+    "id": 2,
+    "title": "Mountain Peak",
+    "description": "Snow-covered mountain with clear blue sky",
+    "year": "2024",
+    "image": "images/mountain-peak.jpg"
+  }
+]

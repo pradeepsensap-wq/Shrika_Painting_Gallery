@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Paintings Gallery</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🎨 My Paintings Gallery</h1>
+            <p class="subtitle">A collection of my artwork</p>
+        </header>
+
+        <div class="content-wrapper">
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <div class="upload-card">
+                    <h2>Add New Painting</h2>
+                    <form id="uploadForm" class="upload-form">
+                        <div class="form-group">
+                            <label for="paintingTitle">Painting Title:</label>
+                            <input type="text" id="paintingTitle" required placeholder="Enter painting title">
+                        </div>
+                        <div class="form-group">
+                            <label for="paintingDescription">Description:</label>
+                            <textarea id="paintingDescription" rows="2" placeholder="Describe your painting..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="paintingImage">Upload Image:</label>
+                            <input type="file" id="paintingImage" accept="image/*" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="paintingYear">Year Created:</label>
+                            <input type="number" id="paintingYear" min="1900" max="2099" placeholder="e.g., 2024">
+                        </div>
+                        <button type="submit" class="btn-submit">Add Painting</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Gallery Section -->
+            <section class="gallery-section">
+                <div class="gallery-header">
+                    <h2>Gallery</h2>
+                    <div class="gallery-nav">
+                        <button class="arrow-btn" id="prevBtn" onclick="scrollGallery(-1)">❮</button>
+                        <button class="arrow-btn" id="nextBtn" onclick="scrollGallery(1)">❯</button>
+                    </div>
+                </div>
+                <div id="gallery" class="gallery-grid">
+                    <!-- Paintings will be displayed here -->
+                </div>
+                <p id="emptyMessage" class="empty-message">No paintings yet. Add your first painting above!</p>
+            </section>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
