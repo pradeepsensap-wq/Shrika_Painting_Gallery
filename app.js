@@ -1,12 +1,31 @@
-// Load paintings from localStorage on page load
+// Firebase Configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyAGV1XK3dXK8P8n_-Q8vVq5pZ0Z9pJ8n_k",
+    authDomain: "shrika-painting-gallery.firebaseapp.com",
+    projectId: "shrika-painting-gallery",
+    storageBucket: "shrika-painting-gallery.appspot.com",
+    messagingSenderId: "123456789012",
+    appId: "1:123456789012:web:abc123def456"
+};
+
+// Initialize Firebase
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+// Load paintings from Firestore on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadPaintings();
     
     // Add event listener to the form
     document.getElementById('uploadForm').addEventListener('submit', handleFormSubmit);
+    
+    // Listen for real-time updates
+    listenForPaintingUpdates();
 });
 
 let currentPaintingIndex = 0;
+let allPaintings = [];
 
 // Handle form submission
 function handleFormSubmit(e) {
@@ -17,98 +36,141 @@ function handleFormSubmit(e) {
     const year = document.getElementById('paintingYear').value;
     const imageInput = document.getElementById('paintingImage');
     
+    // Show loading state
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Uploading...';
+    
     // Read the image file
     const file = imageInput.files[0];
     const reader = new FileReader();
     
     reader.onload = function(event) {
         const imageData = event.target.result;
+        const fileName = `paintings/${Date.now()}_${file.name}`;
+        const storageRef = storage.ref(fileName);
         
-        // Create painting object
-        const painting = {
-            id: Date.now(),
-            title: title,
-            description: description,
-            year: year || 'Unknown',
-            image: imageData
-        };
+        // Convert base64 to blob for upload
+        const blob = dataURItoBlob(imageData);
         
-        // Get existing paintings from localStorage temporarily
-        let paintings = JSON.parse(localStorage.getItem('paintings')) || [];
-        paintings.push(painting);
-        
-        // Save to localStorage
-        localStorage.setItem('paintings', JSON.stringify(paintings));
-        
-        // Reset form
-        document.getElementById('uploadForm').reset();
-        
-        // Show alert with instructions
-        alert('Painting added to your gallery!\n\nTo share with friends:\n1. Export the painting as an image file\n2. Add it to the "images" folder in your GitHub repository\n3. Update paintings.json with the new painting details\n4. Push to GitHub');
-        
-        // Reload gallery
-        loadPaintings();
+        // Upload image to Firebase Storage
+        storageRef.put(blob).then(snapshot => {
+            // Get the download URL
+            return snapshot.ref.getDownloadURL();
+        }).then(downloadURL => {
+            // Create painting object
+            const painting = {
+                title: title,
+                description: description,
+                year: year || 'Unknown',
+                imageUrl: downloadURL,
+                createdAt: new Date()
+            };
+            
+            // Save to Firestore
+            return db.collection('paintings').add(painting);
+        }).then(() => {
+            // Reset form
+            document.getElementById('uploadForm').reset();
+            
+            // Reset button
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+            
+            // Show success message
+            alert('Painting added successfully! 🎉');
+        }).catch(error => {
+            console.error('Error uploading painting:', error);
+            alert('Error uploading painting. Please try again.');
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        });
     };
     
     reader.readAsDataURL(file);
 }
 
-// Load and display paintings from JSON file
+// Convert data URI to Blob
+function dataURItoBlob(dataURI) {
+    const byteString = atob(dataURI.split(',')[1]);
+    const mimeString = dataURI.split(',')[0].match(/:(.*?);/)[1];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
+}
+
+// Load and display paintings from Firestore
 function loadPaintings() {
-    fetch('paintings.json')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to load paintings.json');
+    db.collection('paintings').orderBy('createdAt', 'desc').limit(100).get().then(snapshot => {
+        allPaintings = [];
+        snapshot.forEach(doc => {
+            allPaintings.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        currentPaintingIndex = 0;
+        displayCurrentPainting();
+        updateButtonStates();
+    }).catch(error => {
+        console.error('Error loading paintings:', error);
+        const gallery = document.getElementById('gallery');
+        gallery.innerHTML = '<p class="error-message">Error loading paintings. Please refresh the page.</p>';
+    });
+}
+
+// Listen for real-time updates from Firestore
+function listenForPaintingUpdates() {
+    db.collection('paintings').orderBy('createdAt', 'desc').limit(100)
+        .onSnapshot(snapshot => {
+            allPaintings = [];
+            snapshot.forEach(doc => {
+                allPaintings.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            
+            if (currentPaintingIndex >= allPaintings.length && allPaintings.length > 0) {
+                currentPaintingIndex = allPaintings.length - 1;
             }
-            return response.json();
-        })
-        .then(paintings => {
-            console.log('Loaded paintings:', paintings);
-            const gallery = document.getElementById('gallery');
-            const emptyMessage = document.getElementById('emptyMessage');
             
-            if (paintings.length === 0) {
-                emptyMessage.style.display = 'block';
-                document.getElementById('prevBtn').disabled = true;
-                document.getElementById('nextBtn').disabled = true;
-                return;
-            }
-            
-            emptyMessage.style.display = 'none';
-            currentPaintingIndex = 0;
-            
-            // Store paintings globally for navigation
-            window.allPaintings = paintings;
-            
-            // Display only the current painting
-            displayCurrentPainting(paintings);
-            
-            // Update button states
-            updateButtonStates(paintings.length);
-        })
-        .catch(error => {
-            console.error('Error loading paintings:', error);
-            document.getElementById('emptyMessage').textContent = 'Error loading paintings. Please refresh the page.';
-            document.getElementById('emptyMessage').style.display = 'block';
+            displayCurrentPainting();
+            updateButtonStates();
         });
 }
 
 // Display current painting
-function displayCurrentPainting(paintings) {
+function displayCurrentPainting() {
     const gallery = document.getElementById('gallery');
+    const emptyMessage = document.getElementById('emptyMessage');
+    
+    // Clear gallery
     gallery.innerHTML = '';
     
-    if (paintings.length === 0) return;
+    if (allPaintings.length === 0) {
+        emptyMessage.style.display = 'block';
+        document.getElementById('prevBtn').disabled = true;
+        document.getElementById('nextBtn').disabled = true;
+        return;
+    }
     
-    const painting = paintings[currentPaintingIndex];
+    emptyMessage.style.display = 'none';
+    
+    const painting = allPaintings[currentPaintingIndex];
     const card = createPaintingCard(painting);
     gallery.appendChild(card);
 }
 
 // Update arrow button states
-function updateButtonStates(totalPaintings) {
+function updateButtonStates() {
     document.getElementById('prevBtn').disabled = currentPaintingIndex === 0;
-    document.getElementById('nextBtn').disabled = currentPaintingIndex === totalPaintings - 1;
+    document.getElementById('nextBtn').disabled = currentPaintingIndex === allPaintings.length - 1;
 }
 
 // Create a painting card element
@@ -117,14 +179,14 @@ function createPaintingCard(painting) {
     card.className = 'painting-card';
     
     card.innerHTML = `
-        <img src="${painting.image}" alt="${painting.title}" class="painting-image">
+        <img src="${painting.imageUrl}" alt="${painting.title}" class="painting-image">
         <div class="painting-info">
             <h3 class="painting-title">${escapeHtml(painting.title)}</h3>
             <p class="painting-year">Year: ${painting.year}</p>
             <p class="painting-description">${escapeHtml(painting.description)}</p>
             <div class="painting-actions">
-                <button class="btn-view" onclick="viewPainting(${painting.id})">View</button>
-                <button class="btn-delete" onclick="deletePainting(${painting.id})">Delete</button>
+                <button class="btn-view" onclick="viewPainting('${painting.id}')">View</button>
+                <button class="btn-delete" onclick="deletePainting('${painting.id}')">Delete</button>
             </div>
         </div>
     `;
@@ -134,8 +196,7 @@ function createPaintingCard(painting) {
 
 // View painting in modal
 function viewPainting(id) {
-    const paintings = JSON.parse(localStorage.getItem('paintings')) || [];
-    const painting = paintings.find(p => p.id === id);
+    const painting = allPaintings.find(p => p.id === id);
     
     if (!painting) return;
     
@@ -144,7 +205,7 @@ function viewPainting(id) {
     
     content.innerHTML = `
         <button class="close-btn" onclick="closeModal()">&times;</button>
-        <img src="${painting.image}" alt="${painting.title}" class="modal-image">
+        <img src="${painting.imageUrl}" alt="${painting.title}" class="modal-image">
         <h2 class="modal-title">${escapeHtml(painting.title)}</h2>
         <p class="modal-year">Year Created: ${painting.year}</p>
         <p class="modal-description">${escapeHtml(painting.description)}</p>
@@ -164,10 +225,12 @@ function closeModal() {
 // Delete painting
 function deletePainting(id) {
     if (confirm('Are you sure you want to delete this painting?')) {
-        let paintings = JSON.parse(localStorage.getItem('paintings')) || [];
-        paintings = paintings.filter(p => p.id !== id);
-        localStorage.setItem('paintings', JSON.stringify(paintings));
-        loadPaintings();
+        db.collection('paintings').doc(id).delete().then(() => {
+            console.log('Painting deleted successfully');
+        }).catch(error => {
+            console.error('Error deleting painting:', error);
+            alert('Error deleting painting. Please try again.');
+        });
     }
 }
 
@@ -200,16 +263,14 @@ function escapeHtml(text) {
 
 // Scroll gallery
 function scrollGallery(direction) {
-    const paintings = window.allPaintings || [];
-    
-    if (paintings.length === 0) return;
+    if (allPaintings.length === 0) return;
     
     currentPaintingIndex += direction;
     
-    // Clamp index between 0 and paintings.length - 1
+    // Clamp index between 0 and allPaintings.length - 1
     if (currentPaintingIndex < 0) currentPaintingIndex = 0;
-    if (currentPaintingIndex >= paintings.length) currentPaintingIndex = paintings.length - 1;
+    if (currentPaintingIndex >= allPaintings.length) currentPaintingIndex = allPaintings.length - 1;
     
-    displayCurrentPainting(paintings);
-    updateButtonStates(paintings.length);
+    displayCurrentPainting();
+    updateButtonStates();
 }
